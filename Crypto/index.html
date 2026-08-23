@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Analisa — Multi Crypto Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14; --surface:#12161F; --surface2:#181D28; --line:#242A38;
+    --gold:#C9A227; --gold-soft:#E8C766;
+    --buy:#3ECF8E; --sell:#E5484D; --wait:#E8B84B;
+    --text:#E8E6E1; --muted:#7C8394; --muted2:#4C5262;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,162,39,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(62,207,142,0.05), transparent 60%),
+      var(--bg);
+    color:var(--text);font-family:'Space Grotesk',sans-serif;padding-bottom:50px;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  header{padding:26px 20px 16px;border-bottom:1px solid var(--line);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+  h1{font-size:21px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em;}
+  .sub{color:var(--muted);font-size:12.5px;}
+  main{max-width:640px;margin:0 auto;padding:18px 16px;}
+
+  .refresh-all{
+    width:100%;padding:12px;border-radius:10px;border:1px solid var(--gold);
+    background:rgba(201,162,39,.08);color:var(--gold-soft);font-family:'JetBrains Mono',monospace;
+    font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    cursor:pointer;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .refresh-all.spinning svg{animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .panel-title{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+  .panel-title .dot{width:6px;height:6px;border-radius:50%;background:var(--buy);box-shadow:0 0 8px var(--buy);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .panel-title .coin-name{color:var(--muted);font-weight:400;text-transform:none;font-size:11px;}
+  .cat-tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.03em;}
+  .cat-L1{background:rgba(62,207,142,.12);color:var(--buy);border:1px solid var(--buy);}
+  .cat-L2{background:rgba(201,162,39,.12);color:var(--gold-soft);border:1px solid var(--gold);}
+  .cat-FIXED{background:rgba(124,131,148,.12);color:var(--muted);border:1px solid var(--line);}
+
+  .refresh-btn{
+    background:var(--surface2);border:1px solid var(--line);color:var(--muted);
+    font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;border-radius:8px;
+    cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;
+  }
+  .refresh-btn:hover{border-color:var(--gold);color:var(--gold-soft);}
+  .refresh-btn.spinning svg{animation:spin 0.8s linear infinite;}
+
+  .price-row{display:flex;align-items:baseline;gap:12px;margin-bottom:4px;flex-wrap:wrap;}
+  .price-big{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;}
+  .price-chg{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;padding:3px 9px;border-radius:6px;}
+  .chg-up{color:var(--buy);background:rgba(62,207,142,.12);}
+  .chg-down{color:var(--sell);background:rgba(229,72,77,.12);}
+  .price-idr{font-size:13px;color:var(--gold-soft);margin-bottom:2px;font-family:'JetBrains Mono',monospace;}
+  .price-idr-pluang{font-size:11.5px;color:var(--wait);margin-bottom:4px;font-family:'JetBrains Mono',monospace;}
+  .price-time{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-bottom:14px;}
+
+  .signal-badge{display:inline-block;padding:6px 14px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.05em;margin-bottom:6px;}
+  .signal-BUY{background:rgba(62,207,142,.15);color:var(--buy);border:1px solid var(--buy);}
+  .signal-SELL{background:rgba(229,72,77,.15);color:var(--sell);border:1px solid var(--sell);}
+  .signal-WAIT{background:rgba(232,184,75,.15);color:var(--wait);border:1px solid var(--wait);}
+
+  .tf-row{display:flex;gap:8px;margin-bottom:12px;}
+  .tf-badge{flex:1;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:center;}
+  .tf-badge-label{font-size:8.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.03em;text-transform:uppercase;margin-bottom:2px;}
+  .tf-badge-value{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+  .stat{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 6px;text-align:center;}
+  .stat-label{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.03em;margin-bottom:3px;text-transform:uppercase;}
+  .stat-value{font-size:12.5px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .stat-sub{font-size:8.5px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+  .sig-note{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+
+  .note{font-size:11.5px;color:var(--muted);line-height:1.6;background:var(--surface2);border-radius:10px;padding:11px;border:1px solid var(--line);}
+  .note b{color:var(--gold-soft);}
+
+  .disclaimer{font-size:10.5px;color:var(--muted2);margin-top:18px;line-height:1.6;text-align:center;}
+  footer{text-align:center;padding:20px 16px 4px;font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">// live dashboard · binance realtime //</div>
+  <h1>Analisa Terminal</h1>
+  <div class="sub">XAUT (fixed) + Top 3 L1 + Top 3 L2 (cuma WAIT–BUY) — Live via Binance, IDR dikalibrasi ke Pluang</div>
+</header>
+
+<main>
+
+  <button class="refresh-all" id="refreshAllBtn" onclick="refreshAll()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    Refresh Semua
+  </button>
+
+  <div id="coinPanels"></div>
+
+  <!-- AUTO SCAN INFO PANEL -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title"><span class="dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold);animation:none;"></span> Kriteria Auto-Scan</div>
+    </div>
+    <div class="sub" style="margin-bottom:12px;">Top 3 Layer 1 + Top 3 Layer 2 diisi otomatis tiap refresh — cuma yang sinyalnya WAIT (netral kuat) sampai BUY yang ditampilkan. Sinyal SELL/hindari otomatis di-skip dari list.</div>
+    <div id="scanCriteriaList" style="margin-bottom:10px;"></div>
+    <div class="note">
+      <b>Cara milih:</b> auto-scan pilih dari daftar koin <b>Layer 1</b> (BTC, ETH, SOL, BNB, ADA, AVAX, dll) dan <b>Layer 2</b> (ARB, OP, MATIC/POL, IMX, dll) secara terpisah. Dari tiap kategori, diambil yang paling likuid (volume tinggi), lalu dianalisa H1+M5 — cuma yang sinyalnya netral kuat/BUY yang masuk, diurutkan BUY dulu baru WAIT, diambil 3 teratas per kategori. List berubah tiap refresh sesuai kondisi pasar real-time.
+    </div>
+  </div>
+
+  <div class="disclaimer">Bukan saran finansial. Data live via Binance public API (klines H1 + M5), RSI &amp; EMA dihitung di browser. Harga IDR estimasi (kurs USDT→IDR) + kalibrasi spread Beli Pluang (~Rp950rb).</div>
+</main>
+
+<footer>analisa terminal · survival mode edition</footer>
+
+<script>
+const FIXED_COINS = [
+  {symbol:'XAUTUSDT', name:'Tether Gold'},
+];
+const PICKS_PER_CATEGORY = 3;
+const STABLE_BASES = ['USDC','FDUSD','TUSD','DAI','USDP','BUSD','EUR','GBP','USD1','PYUSD','USDE'];
+const L1_BASES = [
+  'BTC','ETH','SOL','BNB','ADA','AVAX','DOT','ATOM','NEAR','APT','SUI','TON','TRX','XRP',
+  'LTC','ALGO','FTM','SEI','INJ','HBAR','ICP','EGLD','KAS','XTZ','ETC','BCH','FIL','AR'
+];
+const L2_BASES = ['ARB','OP','MATIC','POL','IMX','STRK','MNT','METIS','ZK','LRC','BLAST','MANTA'];
+let COINS = [...FIXED_COINS]; // akan ditambah hasil auto-scan tiap refresh
+let signalTypeMap = {}; // simpan tipe sinyal terakhir tiap koin, buat sorting
+let analysisCache = {}; // hasil analisa dari tahap scan, dipakai buat render awal tanpa fetch ulang
+const PLUANG_SPREAD_IDR = 950000;
+let IDR_RATE = 16300; // fallback, akan di-update dari API saat load
+
+const panelsDiv = document.getElementById('coinPanels');
+
+function renderPanels(){
+  panelsDiv.innerHTML = '';
+  COINS.forEach(c=>{
+    const id = c.symbol;
+    const p = document.createElement('div');
+    p.className = 'panel';
+    p.dataset.symbol = id;
+    p.innerHTML = `
+      <div class="panel-head">
+        <div class="panel-title"><span class="dot"></span> ${c.symbol.replace('USDT','')} <span class="coin-name">${c.name}</span> ${c.category ? `<span class="cat-tag cat-${c.category}">${c.category}</span>` : ''}</div>
+        <button class="refresh-btn" id="btn-${id}" onclick="refreshCoin('${id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="price-row">
+        <span class="price-big mono" id="price-${id}">—</span>
+        <span class="price-chg mono" id="chg-${id}">—</span>
+      </div>
+      <div class="price-idr" id="idr-${id}">Rp —</div>
+      <div class="price-idr-pluang" id="idrpluang-${id}">Rp —</div>
+      <div class="price-time" id="time-${id}">Belum update.</div>
+
+      <div class="tf-row">
+        <div class="tf-badge">
+          <div class="tf-badge-label">Tren H1</div>
+          <div class="tf-badge-value" id="trendh1-${id}">—</div>
+        </div>
+        <div class="tf-badge">
+          <div class="tf-badge-label">RSI M5</div>
+          <div class="tf-badge-value" id="rsi-${id}">—</div>
+        </div>
+        <div class="tf-badge">
+          <div class="tf-badge-label">Volume</div>
+          <div class="tf-badge-value" id="volflag-${id}">—</div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="stat" style="border-color:var(--buy);">
+          <div class="stat-label">Buy Terbaik</div>
+          <div class="stat-value" id="buybest-${id}" style="color:var(--buy);">—</div>
+          <div class="stat-sub" id="buybestidr-${id}">Rp —</div>
+        </div>
+        <div class="stat" style="border-color:var(--wait);">
+          <div class="stat-label">Buy Now (min)</div>
+          <div class="stat-value" id="buynow-${id}" style="color:var(--wait);">—</div>
+          <div class="stat-sub" id="buynowidr-${id}">Rp —</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Prediksi</div>
+          <div class="stat-value" id="pred-${id}">—</div>
+        </div>
+      </div>
+
+      <span class="signal-badge signal-WAIT" id="signal-${id}">● —</span>
+      <div class="sig-note" id="signalnote-${id}">Belum ada data.</div>
+
+      <div class="note">
+        <b>Buy Terbaik:</b> <span id="notebest-${id}">—</span> (swing low M5, R:R paling sehat)
+        <br>
+        <b>Buy Now (min):</b> <span id="notenow-${id}">—</span> (batas bawah kalau terpaksa entry)
+        <br>
+        <b>Analisa:</b> <span id="notepred-${id}">—</span>
+      </div>
+    `;
+    panelsDiv.appendChild(p);
+  });
+  renderEditList();
+}
+
+function renderEditList(){
+  const list = document.getElementById('scanCriteriaList');
+  if(!list) return;
+  list.innerHTML = COINS.map((c)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;">
+      <span class="mono" style="font-size:12px;"><b style="color:var(--gold-soft);">${c.symbol}</b> — ${c.name}</span>
+      <span class="mono" style="font-size:9.5px;color:var(--muted);text-transform:uppercase;">${c.category || 'FIXED'} · ${signalTypeMap[c.symbol] || '—'}</span>
+    </div>
+  `).join('');
+}
+
+async function scanDayTradingCandidates(){
+  try{
+    const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const all = await res.json();
+    const fixedSymbols = new Set(FIXED_COINS.map(c=>c.symbol));
+
+    function poolFor(baseList, n){
+      return all.filter(t=>{
+        const sym = t.symbol;
+        if(!sym.endsWith('USDT')) return false;
+        if(fixedSymbols.has(sym)) return false;
+        const base = sym.replace('USDT','');
+        if(STABLE_BASES.includes(base)) return false;
+        if(!baseList.includes(base)) return false;
+        const vol = parseFloat(t.quoteVolume);
+        return vol && vol > 0;
+      }).sort((a,b)=>parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume)).slice(0, n);
+    }
+
+    // Ambil kandidat likuid tiap kategori (lebih banyak dari slot final, karena sebagian nanti kefilter SELL)
+    const l1Candidates = poolFor(L1_BASES, 10).map(t=>t.symbol);
+    const l2Candidates = poolFor(L2_BASES, 8).map(t=>t.symbol);
+    const allCandidates = [...new Set([...l1Candidates, ...l2Candidates, ...fixedSymbols])];
+
+    // Analisa semua kandidat (sequential biar aman buat STB spek rendah)
+    analysisCache = {};
+    for(const sym of allCandidates){
+      try{
+        analysisCache[sym] = await analyzeSymbol(sym);
+      }catch(e){ /* skip kalau gagal fetch simbol ini */ }
+    }
+
+    const priority = {BUY:0, WAIT:1, SELL:2};
+    function pickTop(symbols, category){
+      return symbols
+        .filter(s=>analysisCache[s] && analysisCache[s].signalType !== 'SELL')
+        .sort((a,b)=>{
+          const pa = priority[analysisCache[a].signalType], pb = priority[analysisCache[b].signalType];
+          if(pa!==pb) return pa-pb;
+          return analysisCache[b].chg - analysisCache[a].chg; // tie-break: momentum lebih kuat duluan
+        })
+        .slice(0, PICKS_PER_CATEGORY)
+        .map(s=>({symbol:s, name:s.replace('USDT',''), category}));
+    }
+
+    const l1Picks = pickTop(l1Candidates, 'L1');
+    const l2Picks = pickTop(l2Candidates, 'L2');
+
+    COINS = [
+      ...FIXED_COINS.map(c=>({...c, category:'FIXED'})),
+      ...l1Picks,
+      ...l2Picks
+    ];
+  }catch(e){
+    COINS = FIXED_COINS.map(c=>({...c, category:'FIXED'}));
+  }
+}
+
+renderPanels();
+
+// ---------- Indikator ----------
+function calcEMA(closes, period){
+  const k = 2/(period+1);
+  let ema = closes[0];
+  const out = [ema];
+  for(let i=1;i<closes.length;i++){
+    ema = closes[i]*k + ema*(1-k);
+    out.push(ema);
+  }
+  return out;
+}
+
+function calcRSI(closes, period=14){
+  if(closes.length < period+1) return null;
+  let gains=0, losses=0;
+  for(let i=1;i<=period;i++){
+    const diff = closes[i]-closes[i-1];
+    if(diff>=0) gains+=diff; else losses-=diff;
+  }
+  let avgGain = gains/period, avgLoss = losses/period;
+  for(let i=period+1;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    const gain = diff>0?diff:0;
+    const loss = diff<0?-diff:0;
+    avgGain = (avgGain*(period-1)+gain)/period;
+    avgLoss = (avgLoss*(period-1)+loss)/period;
+  }
+  if(avgLoss===0) return 100;
+  const rs = avgGain/avgLoss;
+  return 100 - (100/(1+rs));
+}
+
+async function fetchKlines(symbol, interval, limit){
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+  if(!res.ok) throw new Error('klines fetch failed');
+  return res.json();
+}
+
+async function fetchIdrRate(){
+  try{
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=idr');
+    const data = await res.json();
+    if(data.tether && data.tether.idr){ IDR_RATE = data.tether.idr; }
+  }catch(e){ /* pakai fallback rate */ }
+}
+
+async function analyzeSymbol(symbol){
+  const [klinesH1, klinesM5, ticker24h] = await Promise.all([
+    fetchKlines(symbol, '1h', 60),
+    fetchKlines(symbol, '5m', 60),
+    fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`).then(r=>r.json())
+  ]);
+
+  const closesH1 = klinesH1.map(k=>parseFloat(k[4]));
+  const closesM5 = klinesM5.map(k=>parseFloat(k[4]));
+  const lowsM5 = klinesM5.map(k=>parseFloat(k[3]));
+  const volsM5 = klinesM5.map(k=>parseFloat(k[5]));
+
+  const price = closesM5[closesM5.length-1];
+  const chg = parseFloat(ticker24h.priceChangePercent);
+
+  // Tren H1 via EMA9 vs EMA21
+  const ema9H1 = calcEMA(closesH1, 9);
+  const ema21H1 = calcEMA(closesH1, 21);
+  const trendUp = ema9H1[ema9H1.length-1] > ema21H1[ema21H1.length-1];
+
+  // RSI M5
+  const rsiM5 = calcRSI(closesM5, 14);
+
+  // Volume confirmation
+  const recentVols = volsM5.slice(-20);
+  const avgVol = recentVols.reduce((a,b)=>a+b,0)/recentVols.length;
+  const volHigh = volsM5[volsM5.length-1] > avgVol * 1.2;
+
+  // Swing low/high dari 20 candle M5 terakhir
+  const swingLow = Math.min(...lowsM5.slice(-20));
+  const swingHigh = Math.max(...klinesM5.slice(-20).map(k=>parseFloat(k[2])));
+
+  const priceIDR = price * IDR_RATE;
+  const buyBest = swingLow;
+  const buyNow = swingLow + (price - swingLow) * 0.55;
+
+  let signalType, badgeText, sigNoteText, predText, predColor, notePredText;
+
+  if(trendUp && rsiM5!==null && rsiM5 < 35){
+    signalType='BUY'; badgeText='● BUY (pullback tren naik)';
+    sigNoteText = volHigh
+      ? 'Tren H1 naik, RSI M5 oversold, didukung volume tinggi — sinyal cukup kuat.'
+      : 'Tren H1 naik, RSI M5 oversold, tapi volume masih normal — tunggu konfirmasi volume kalau mau lebih yakin.';
+    predText='▲ Buy'; predColor='var(--buy)';
+    notePredText = 'Entry di area pullback tren naik. R:R sehat kalau beli dekat swing low.';
+  } else if(trendUp && rsiM5!==null && rsiM5 > 70){
+    signalType='WAIT'; badgeText='● TUNGGU (overbought)';
+    sigNoteText = 'Tren H1 masih naik, tapi RSI M5 overbought — risiko chase kalau entry sekarang.';
+    predText='◆ Netral'; predColor='var(--wait)';
+    notePredText = 'Momentum kuat tapi sudah jenuh jangka pendek. Tunggu pullback ke area support.';
+  } else if(!trendUp && rsiM5!==null && rsiM5 > 65){
+    signalType='SELL'; badgeText='● HINDARI (tren turun)';
+    sigNoteText = 'Tren H1 turun dan RSI M5 mulai jenuh beli — bukan area entry yang baik.';
+    predText='▼ Hindari'; predColor='var(--sell)';
+    notePredText = 'Bias turun di timeframe besar. Hindari buy sampai tren H1 berbalik naik.';
+  } else if(!trendUp){
+    signalType='SELL'; badgeText='● TREN TURUN';
+    sigNoteText = 'Tren H1 masih turun — belum saatnya buy meski RSI M5 netral.';
+    predText='▼ Hindari'; predColor='var(--sell)';
+    notePredText = 'Tunggu tren H1 (EMA9 potong EMA21 ke atas) sebelum cari entry buy.';
+  } else {
+    signalType='WAIT'; badgeText='● TUNGGU KONFIRMASI';
+    sigNoteText = 'Tren H1 naik tapi RSI M5 belum di area ekstrem — belum ada momen entry jelas.';
+    predText='◆ Netral'; predColor='var(--wait)';
+    notePredText = 'Tren mendukung tapi timing belum pas. Pantau RSI M5 turun ke bawah 35 untuk entry.';
+  }
+
+  return {
+    symbol, price, chg, priceIDR, trendUp, rsiM5, volHigh, buyBest, buyNow,
+    signalType, badgeText, sigNoteText, predText, predColor, notePredText
+  };
+}
+
+function renderCoinData(symbol, d){
+  const fmt = n => n.toLocaleString('en-US',{maximumFractionDigits: n<10?4:2});
+
+  document.getElementById('price-'+symbol).textContent = '$' + d.price.toLocaleString('en-US',{minimumFractionDigits: d.price<10?4:2, maximumFractionDigits: d.price<10?4:2});
+  document.getElementById('idr-'+symbol).textContent = '≈ Rp ' + Math.round(d.priceIDR).toLocaleString('id-ID') + ' (referensi global)';
+  document.getElementById('idrpluang-'+symbol).textContent = '≈ Rp ' + Math.round(d.priceIDR+PLUANG_SPREAD_IDR).toLocaleString('id-ID') + ' (estimasi Beli di Pluang)';
+  const chgEl = document.getElementById('chg-'+symbol);
+  chgEl.textContent = (d.chg>=0?'+':'')+d.chg.toFixed(2)+'%';
+  chgEl.className = 'price-chg mono ' + (d.chg>=0?'chg-up':'chg-down');
+  document.getElementById('time-'+symbol).textContent = 'Update: '+new Date().toLocaleTimeString('id-ID')+' · H1+M5';
+
+  const trendEl = document.getElementById('trendh1-'+symbol);
+  trendEl.textContent = d.trendUp ? '▲ Naik' : '▼ Turun';
+  trendEl.style.color = d.trendUp ? 'var(--buy)' : 'var(--sell)';
+
+  const rsiEl = document.getElementById('rsi-'+symbol);
+  rsiEl.textContent = d.rsiM5 ? d.rsiM5.toFixed(0) : '—';
+  rsiEl.style.color = d.rsiM5 ? (d.rsiM5<35?'var(--buy)':d.rsiM5>70?'var(--sell)':'var(--text)') : 'var(--text)';
+
+  const volEl = document.getElementById('volflag-'+symbol);
+  volEl.textContent = d.volHigh ? 'Tinggi' : 'Normal';
+  volEl.style.color = d.volHigh ? 'var(--gold-soft)' : 'var(--muted)';
+
+  document.getElementById('buybest-'+symbol).textContent = fmt(d.buyBest);
+  document.getElementById('buynow-'+symbol).textContent = fmt(d.buyNow);
+  document.getElementById('buybestidr-'+symbol).textContent = 'Rp '+Math.round(d.buyBest*IDR_RATE+PLUANG_SPREAD_IDR).toLocaleString('id-ID');
+  document.getElementById('buynowidr-'+symbol).textContent = 'Rp '+Math.round(d.buyNow*IDR_RATE+PLUANG_SPREAD_IDR).toLocaleString('id-ID');
+  document.getElementById('notebest-'+symbol).textContent = '$'+fmt(d.buyBest)+' (≈Rp '+Math.round(d.buyBest*IDR_RATE+PLUANG_SPREAD_IDR).toLocaleString('id-ID')+' di Pluang)';
+  document.getElementById('notenow-'+symbol).textContent = '$'+fmt(d.buyNow)+' (≈Rp '+Math.round(d.buyNow*IDR_RATE+PLUANG_SPREAD_IDR).toLocaleString('id-ID')+' di Pluang)';
+
+  const sigBadge = document.getElementById('signal-'+symbol);
+  sigBadge.className = 'signal-badge signal-'+d.signalType;
+  sigBadge.textContent = d.badgeText;
+  document.getElementById('signalnote-'+symbol).textContent = d.sigNoteText;
+  const predEl = document.getElementById('pred-'+symbol);
+  predEl.textContent = d.predText; predEl.style.color = d.predColor;
+  document.getElementById('notepred-'+symbol).textContent = d.notePredText;
+
+  signalTypeMap[symbol] = d.signalType;
+}
+
+async function refreshCoin(symbol){
+  const btn = document.getElementById('btn-'+symbol);
+  if(btn){ btn.classList.add('spinning'); }
+  try{
+    const d = await analyzeSymbol(symbol);
+    analysisCache[symbol] = d;
+    renderCoinData(symbol, d);
+  }catch(e){
+    const timeEl = document.getElementById('time-'+symbol);
+    if(timeEl) timeEl.textContent = 'Gagal fetch — cek simbol atau koneksi.';
+  }
+  if(btn){ btn.classList.remove('spinning'); }
+}
+
+function reorderPanels(){
+  const panels = Array.from(panelsDiv.children);
+  const sigPriority = {BUY:0, WAIT:1, SELL:2};
+  const catPriority = {FIXED:0, L1:1, L2:2};
+  const coinMap = {};
+  COINS.forEach(c=>coinMap[c.symbol]=c);
+  panels.sort((a,b)=>{
+    const catA = catPriority[coinMap[a.dataset.symbol]?.category] ?? 3;
+    const catB = catPriority[coinMap[b.dataset.symbol]?.category] ?? 3;
+    if(catA !== catB) return catA - catB;
+    const sigA = sigPriority[signalTypeMap[a.dataset.symbol]] ?? 1;
+    const sigB = sigPriority[signalTypeMap[b.dataset.symbol]] ?? 1;
+    return sigA - sigB;
+  });
+  panels.forEach(p=>panelsDiv.appendChild(p));
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('refreshAllBtn');
+  btn.classList.add('spinning');
+  await fetchIdrRate();
+  await scanDayTradingCandidates(); // sudah include analisa H1+M5 tiap kandidat
+  renderPanels();
+  // Pakai hasil analisa dari tahap scan (sudah di-cache), gak perlu fetch ulang
+  for(const c of COINS){
+    if(analysisCache[c.symbol]){
+      renderCoinData(c.symbol, analysisCache[c.symbol]);
+    } else {
+      await refreshCoin(c.symbol);
+    }
+  }
+  reorderPanels();
+  renderEditList();
+  btn.classList.remove('spinning');
+}
+
+window.addEventListener('DOMContentLoaded', refreshAll);
+</script>
+
+</body>
+</html>
