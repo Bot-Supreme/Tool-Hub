@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Deck — Tools Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14; --surface:#12161F; --surface2:#181D28; --line:#242A38;
+    --gold:#C9A227; --gold-soft:#E8C766;
+    --live:#3ECF8E; --off:#4C5262; --sell:#E5484D;
+    --text:#E8E6E1; --muted:#7C8394; --muted2:#4C5262;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,162,39,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(62,207,142,0.05), transparent 60%),
+      var(--bg);
+    color:var(--text);font-family:'Space Grotesk',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+  /* ===== HEADER ===== */
+  header{padding:30px 20px 22px;border-bottom:1px solid var(--line);position:relative;overflow:hidden;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .eyebrow .blip{width:6px;height:6px;border-radius:50%;background:var(--live);box-shadow:0 0 8px var(--live);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  h1{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:520px;}
+
+  .status-strip{
+    display:flex;gap:0;margin-top:18px;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;background:var(--surface);
+  }
+  .status-cell{flex:1;padding:10px 12px;text-align:center;border-right:1px solid var(--line);}
+  .status-cell:last-child{border-right:none;}
+  .status-num{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--gold-soft);}
+  .status-lbl{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:2px;}
+
+  main{max-width:640px;margin:0 auto;padding:22px 16px 40px;}
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--muted);
+    text-transform:uppercase;margin:0 0 12px 4px;display:flex;align-items:center;gap:10px;
+  }
+  .section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  /* ===== MODULE CARDS ===== */
+  .modules{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+
+  .module{
+    display:flex;align-items:center;gap:14px;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+    text-decoration:none;color:inherit;position:relative;overflow:hidden;
+    transition:border-color .18s ease, transform .18s ease, background .18s ease;
+  }
+  .module.active{cursor:pointer;}
+  .module.active:hover{border-color:var(--gold);transform:translateY(-1px);background:var(--surface2);}
+  .module.active:active{transform:translateY(0);}
+  .module.pending{opacity:.55;cursor:default;}
+
+  .module-idx{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--muted2);
+    width:22px;flex-shrink:0;
+  }
+  .module.active .module-idx{color:var(--gold);}
+
+  .module-icon{
+    width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    background:var(--surface2);border:1px solid var(--line);
+  }
+  .module.active .module-icon{border-color:rgba(201,162,39,.35);}
+  .module-icon svg{width:19px;height:19px;}
+
+  .module-body{flex:1;min-width:0;}
+  .module-title{font-size:14.5px;font-weight:600;margin-bottom:2px;letter-spacing:-.005em;}
+  .module-desc{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);line-height:1.4;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .module-status{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .status-dot{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;
+    letter-spacing:.04em;text-transform:uppercase;font-weight:700;}
+  .status-dot .dot{width:5px;height:5px;border-radius:50%;}
+  .status-live .dot{background:var(--live);box-shadow:0 0 6px var(--live);animation:pulse 2s infinite;}
+  .status-live{color:var(--live);}
+  .status-pending .dot{background:var(--off);}
+  .status-pending{color:var(--muted2);}
+
+  .arrow{color:var(--muted2);flex-shrink:0;transition:transform .18s ease, color .18s ease;}
+  .module.active:hover .arrow{transform:translateX(2px);color:var(--gold-soft);}
+
+  /* ===== FOOTER NOTE ===== */
+  .note{
+    font-size:11px;color:var(--muted);line-height:1.6;background:var(--surface);
+    border-radius:12px;padding:14px 16px;border:1px solid var(--line);margin-bottom:20px;
+  }
+  .note b{color:var(--gold-soft);}
+
+  footer{text-align:center;padding:10px 16px 4px;font-size:10.5px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:.03em;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow"><span class="blip"></span> command deck · personal ops</div>
+  <h1>Tools Hub</h1>
+  <div class="sub">Satu pintu ke semua tool operasional — tap modul untuk buka.</div>
+
+  <div class="status-strip">
+    <div class="status-cell">
+      <div class="status-num mono">1</div>
+      <div class="status-lbl">Aktif</div>
+    </div>
+    <div class="status-cell">
+      <div class="status-num mono" style="color:var(--muted2);">4</div>
+      <div class="status-lbl">Pending</div>
+    </div>
+    <div class="status-cell">
+      <div class="status-num mono">5</div>
+      <div class="status-lbl">Total Modul</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="section-label">Modul</div>
+
+  <div class="modules">
+
+    <!-- MODULE 1 — ACTIVE -->
+    <a href="crypto-scanner/index.html" class="module active">
+      <div class="module-idx mono">01</div>
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E8C766" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-3-3L4.5 16.2"/></svg>
+      </div>
+      <div class="module-body">
+        <div class="module-title">Analisa Terminal</div>
+        <div class="module-desc mono">Live crypto scanner — Binance realtime</div>
+      </div>
+      <div class="module-status">
+        <div class="status-dot status-live"><span class="dot"></span>Live</div>
+      </div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+
+    <!-- MODULE 2 — PENDING -->
+    <div class="module pending">
+      <div class="module-idx mono">02</div>
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7C8394" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div class="module-body">
+        <div class="module-title">Tool 2</div>
+        <div class="module-desc mono">Belum dikonfigurasi</div>
+      </div>
+      <div class="module-status">
+        <div class="status-dot status-pending"><span class="dot"></span>Pending</div>
+      </div>
+    </div>
+
+    <!-- MODULE 3 — PENDING -->
+    <div class="module pending">
+      <div class="module-idx mono">03</div>
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7C8394" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div class="module-body">
+        <div class="module-title">Tool 3</div>
+        <div class="module-desc mono">Belum dikonfigurasi</div>
+      </div>
+      <div class="module-status">
+        <div class="status-dot status-pending"><span class="dot"></span>Pending</div>
+      </div>
+    </div>
+
+    <!-- MODULE 4 — PENDING -->
+    <div class="module pending">
+      <div class="module-idx mono">04</div>
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7C8394" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div class="module-body">
+        <div class="module-title">Tool 4</div>
+        <div class="module-desc mono">Belum dikonfigurasi</div>
+      </div>
+      <div class="module-status">
+        <div class="status-dot status-pending"><span class="dot"></span>Pending</div>
+      </div>
+    </div>
+
+    <!-- MODULE 5 — PENDING -->
+    <div class="module pending">
+      <div class="module-idx mono">05</div>
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7C8394" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div class="module-body">
+        <div class="module-title">Tool 5</div>
+        <div class="module-desc mono">Belum dikonfigurasi</div>
+      </div>
+      <div class="module-status">
+        <div class="status-dot status-pending"><span class="dot"></span>Pending</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <b>Cara nambah modul:</b> buat folder baru di root repo (mis. <b>tool-2/index.html</b>), lalu ganti <b>href</b> pada kartu modul terkait dari kosong jadi <b>href="tool-2/index.html"</b> dan hapus class <b>pending</b> agar berubah jadi <b>active</b>.
+  </div>
+
+</main>
+
+<footer>tools hub · command deck v1</footer>
+
+</body>
+</html>
