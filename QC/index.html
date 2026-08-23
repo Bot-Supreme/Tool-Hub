@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring QC — Cross Check &amp; Cpk</title>
+<style>
+  :root{
+    --bg:#0f1113;
+    --bg-grad:#14171a;
+    --panel:#1a1e22;
+    --panel2:#20242a;
+    --line:#2a2f35;
+    --line-soft:#22262c;
+    --text:#eceef0;
+    --dim:#8b939b;
+    --dim2:#5f666d;
+    --amber:#f2a900;
+    --amber-soft:rgba(242,169,0,0.1);
+    --green:#3ecf7e;
+    --green-soft:rgba(62,207,126,0.1);
+    --red:#f0503a;
+    --red-soft:rgba(240,80,58,0.12);
+    --mono:'JetBrains Mono','Roboto Mono','SFMono-Regular',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 400px at 50% -10%, rgba(242,169,0,0.06), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;
+    padding:16px 14px 40px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    font-size:9px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-bottom:6px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:14px;height:1px;
+    background:var(--amber);
+  }
+  header h1{
+    font-size:19px;
+    margin:0 0 3px;
+    letter-spacing:-0.01em;
+    font-weight:700;
+  }
+  header .sub{font-size:11px;color:var(--dim);}
+
+  /* Tabs */
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:18px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:4px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 6px;
+    font-size:11px;
+    letter-spacing:0.04em;
+    color:var(--dim);
+    background:transparent;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-family:var(--mono);
+    transition:all .15s;
+  }
+  .tab.active{
+    color:#0f1113;
+    background:var(--amber);
+    font-weight:700;
+  }
+  .page{display:none;}
+  .page.active{display:block;animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .panel-title{
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--dim);
+    margin-bottom:12px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line-soft);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .panel-title .step{
+    color:var(--amber);
+    font-weight:700;
+  }
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px;}
+  .row:last-child{margin-bottom:0;}
+  label{
+    font-size:9.5px;
+    color:var(--dim);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    display:block;
+    margin-bottom:5px;
+  }
+  select, input{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:9px 10px;
+    border-radius:6px;
+    width:100%;
+    transition:border-color .15s;
+  }
+  select:focus, input:focus{outline:none;border-color:var(--amber);}
+  input::placeholder{color:var(--dim2);}
+  .field{flex:1;min-width:110px;}
+  .field.small{flex:0 0 92px;min-width:92px;}
+  .hint{font-size:9.5px;color:var(--dim2);margin-top:4px;line-height:1.4;}
+
+  /* Segmented control */
+  .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel2);}
+  .seg button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--dim);
+    padding:10px 6px;
+    font-size:11px;
+    font-family:var(--mono);
+    cursor:pointer;
+  }
+  .seg button.on{background:var(--amber);color:#0f1113;font-weight:700;}
+  .seg button + button{border-left:1px solid var(--line);}
+
+  button.btn{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.03em;
+    border-radius:7px;
+    border:1px solid var(--line);
+    background:var(--panel2);
+    color:var(--text);
+    padding:11px 14px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  button.btn:active{transform:scale(0.98);}
+  button.primary{
+    background:var(--amber);
+    color:#0f1113;
+    border-color:var(--amber);
+    font-weight:700;
+  }
+  button.ghost{color:var(--dim);}
+  .actions{display:flex;gap:8px;margin:14px 0;}
+  .actions button{flex:1;}
+
+  /* Cross check results */
+  .banner{
+    padding:18px 16px;
+    border-radius:10px;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .banner.ok{background:var(--green-soft);border:1px solid var(--green);}
+  .banner.bad{background:var(--red-soft);border:1px solid var(--red);}
+  .banner.info{background:var(--panel2);border:1px solid var(--line);}
+  .banner .b-label{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+  .banner.ok .b-label{color:var(--green);}
+  .banner.bad .b-label{color:var(--red);}
+  .banner.info .b-label{color:var(--dim);}
+  .banner .b-icon{font-size:22px;margin-bottom:4px;display:block;}
+
+  .kv-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .kv-table tr td{
+    padding:8px 0;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .kv-table tr:last-child td{border-bottom:none;}
+  .kv-table td:first-child{color:var(--dim);width:45%;}
+  .kv-table td:last-child{text-align:right;font-weight:600;}
+  .kv-table tr.hl td:last-child{color:var(--amber);}
+  .kv-table tr.calc td:last-child::after{
+    content:' (calc)';
+    color:var(--dim2);
+    font-weight:400;
+    font-size:10px;
+  }
+
+  .diff-big{
+    font-size:26px;
+    font-weight:700;
+    margin:2px 0;
+  }
+  .diff-big.ok{color:var(--green);}
+  .diff-big.bad{color:var(--red);}
+
+  .solusi{
+    background:var(--panel2);
+    border-left:3px solid var(--amber);
+    border-radius:6px;
+    padding:11px 13px;
+    margin-top:8px;
+    font-size:12px;
+    line-height:1.6;
+  }
+  .solusi .s-title{
+    color:var(--amber);
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    font-weight:700;
+  }
+  .solusi ol{margin:0;padding-left:16px;}
+  .solusi li{margin-bottom:3px;}
+
+  .warn-tag{
+    display:inline-block;
+    background:var(--amber-soft);
+    color:var(--amber);
+    font-size:10px;
+    padding:5px 9px;
+    border-radius:5px;
+    margin-top:8px;
+  }
+
+  .note{font-size:10px;color:var(--dim2);margin-top:10px;line-height:1.6;}
+
+  /* Cpk specific (kept from before) */
+  .counter{
+    font-size:12px;
+    color:var(--dim);
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .counter b{color:var(--amber);font-size:14px;}
+  .bar{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden;margin-bottom:12px;}
+  .bar-fill{height:100%;background:var(--amber);transition:width .2s;}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .grid input{text-align:center;padding:8px 2px;font-size:12px;}
+  .grid .cell{position:relative;}
+  .grid .cell .idx{
+    position:absolute;top:-6px;left:2px;font-size:8px;color:var(--dim2);
+    background:var(--panel);padding:0 3px;
+  }
+  .out-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .out-item{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:11px;}
+  .out-item .k{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+  .out-item .v{font-size:18px;font-weight:700;}
+  .out-item.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;}
+  .verdict{
+    margin-top:12px;padding:11px 12px;border-radius:7px;font-size:12px;text-align:center;
+    letter-spacing:0.03em;text-transform:uppercase;font-weight:700;
+  }
+  .verdict.good{background:var(--green-soft);color:var(--green);border:1px solid var(--green);}
+  .verdict.bad{background:var(--red-soft);color:var(--red);border:1px solid var(--red);}
+  .verdict.warn{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);}
+  .verdict.idle{background:var(--panel2);color:var(--dim);border:1px solid var(--line);}
+  .hi{color:var(--green);}
+  .lo{color:var(--red);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Spring QC Toolkit</div>
+    <h1>Cross Check &amp; Cpk</h1>
+    <div class="sub">Validasi Load vs geometri, lalu evaluasi process capability</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-page="page-cc">Cross Check</button>
+    <button class="tab" data-page="page-cpk">Cpk Calculator</button>
+  </div>
+
+  <!-- ======================= TAB 1: CROSS CHECK ======================= -->
+  <div class="page active" id="page-cc">
+
+    <div class="panel">
+      <div class="panel-title"><span><span class="step">01</span> Jenis Spring</span></div>
+      <div class="seg" id="ccType">
+        <button data-v="EXT" class="on">EXT — Extension</button>
+        <button data-v="COMP">COMP — Compression</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span><span class="step">02</span> Material Kawat</span></div>
+      <select id="ccMaterial">
+        <option value="SUS304">SUS 304 (Stainless)</option>
+        <option value="SWPA">SWP-A (Piano Wire A)</option>
+        <option value="SWPB">SWP-B (Piano Wire B)</option>
+        <option value="SWC">SWC (Hard Drawn)</option>
+      </select>
+      <div class="hint" id="ccGval">G = 68,000 N/mm²</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span><span class="step">03</span> Dimensi</span></div>
+      <div class="row">
+        <div class="field">
+          <label>Wire Diameter (d)</label>
+          <input type="number" step="any" id="ccWire" placeholder="mm">
+        </div>
+        <div class="field">
+          <label id="ccDoutLabel">D Out</label>
+          <input type="number" step="any" id="ccDout" placeholder="mm">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label id="ccFlLabel">FL Out</label>
+          <input type="number" step="any" id="ccFl" placeholder="mm">
+        </div>
+        <div class="field">
+          <label>Jumlah Koil</label>
+          <input type="number" step="any" id="ccCoil" placeholder="koil">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span><span class="step">04</span> Load &amp; Defleksi <span style="color:var(--dim2);font-weight:400;">(opsional)</span></span></div>
+      <div class="row">
+        <div class="field">
+          <label>Load Spec</label>
+          <input type="number" step="any" id="ccLoad" placeholder="kgf">
+        </div>
+        <div class="field">
+          <label id="ccDeflLabel">Tarikan (mm)</label>
+          <input type="number" step="any" id="ccDefl" placeholder="kosong = 10mm">
+        </div>
+      </div>
+      <div class="hint">Kalau defleksi dikosongkan, sistem pakai asumsi standar 10mm.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" id="ccClearBtn">Clear</button>
+      <button class="btn primary" id="ccCheckBtn">CROSS CHECK</button>
+    </div>
+
+    <div id="ccResult" style="display:none;">
+
+      <div class="banner" id="ccBanner">
+        <span class="b-icon" id="ccIcon">—</span>
+        <span class="b-label" id="ccLabel">—</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>Load Comparison</span></div>
+        <table class="kv-table">
+          <tr><td>Load Spec</td><td id="ccLoadSpec">—</td></tr>
+          <tr><td>Load Hitung</td><td id="ccLoadCalc">—</td></tr>
+          <tr class="hl"><td>Selisih</td><td id="ccSelisih">—</td></tr>
+        </table>
+        <div id="ccDeflWarn"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>Detail Perhitungan</span></div>
+        <table class="kv-table">
+          <tr><td>Dm (mean diameter)</td><td id="ccDm">—</td></tr>
+          <tr><td>Spring Index (Dm/d)</td><td id="ccIndex">—</td></tr>
+          <tr><td>n aktif (koil)</td><td id="ccNaktif">—</td></tr>
+          <tr><td>k teori (spring rate)</td><td id="ccKteori">—</td></tr>
+          <tr><td>Defleksi dipakai</td><td id="ccDeflUsed">—</td></tr>
+        </table>
+      </div>
+
+      <div class="panel" id="ccSolusiPanel" style="display:none;">
+        <div class="solusi">
+          <div class="s-title">Solusi</div>
+          <ol>
+            <li>Mainkan Spek Dimensi (d, D out, atau jumlah koil) — operator yang menentukan mana yang paling praktis di-adjust.</li>
+            <li>Cek ulang titik pengukuran Load / defleksi aktual, jangan andalkan asumsi 10mm kalau data sebenarnya tersedia.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /page-cc -->
+
+  <!-- ======================= TAB 2: CPK CALCULATOR ======================= -->
+  <div class="page" id="page-cpk">
+
+    <div class="panel">
+      <div class="row">
+        <div class="field">
+          <label>Parameter</label>
+          <select id="param">
+            <option value="Load">Load</option>
+            <option value="OD">Outer Diameter — OD</option>
+            <option value="ID">Inner Diameter — ID</option>
+            <option value="FL">Free Length — FL</option>
+            <option value="Rate">Spring Rate — k</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+        <div class="field small">
+          <label>Sample n</label>
+          <select id="nsize">
+            <option value="20">20</option>
+            <option value="25">25</option>
+            <option value="30" selected>30</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Std / Nominal value</label>
+          <input type="number" id="stdval" step="any" placeholder="e.g. 5.5">
+        </div>
+        <div class="field small">
+          <label>Satuan</label>
+          <select id="unit">
+            <option value="kgf">kgf</option>
+            <option value="N">N</option>
+            <option value="mm">mm</option>
+            <option value="N/mm">N/mm</option>
+            <option value="kgf/mm">kgf/mm</option>
+            <option value="lb">lb</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field small">
+          <label>Toleransi (±%)</label>
+          <input type="number" id="tolpct" step="any" placeholder="e.g. 10">
+        </div>
+        <div class="field">
+          <label>LSL</label>
+          <input type="number" id="lsl" step="any" placeholder="auto / manual">
+        </div>
+        <div class="field">
+          <label>USL</label>
+          <input type="number" id="usl" step="any" placeholder="auto / manual">
+        </div>
+      </div>
+      <div class="note" id="tolNote" style="margin-top:0;"></div>
+    </div>
+
+    <div class="panel">
+      <div class="counter">Input data <span><b id="filled">0</b>/<span id="total">30</span></span></div>
+      <div class="bar"><div class="bar-fill" id="barfill" style="width:0%"></div></div>
+      <div class="grid" id="grid"></div>
+      <div class="actions">
+        <button class="btn ghost" id="clearBtn">Clear</button>
+        <button class="btn primary" id="calcBtn">Hitung Cpk</button>
+      </div>
+    </div>
+
+    <div class="panel" id="outPanel" style="display:none;">
+      <div class="panel-title"><span>Hasil</span></div>
+      <div class="out-grid">
+        <div class="out-item"><div class="k">Cpk</div><div class="v" id="oCpk">—</div></div>
+        <div class="out-item"><div class="k">Cp</div><div class="v" id="oCp">—</div></div>
+        <div class="out-item"><div class="k">Mean</div><div class="v" id="oMean">—</div></div>
+        <div class="out-item"><div class="k">Std Dev (σ)</div><div class="v" id="oStd">—</div></div>
+        <div class="out-item"><div class="k"><span class="hi">Hi</span> (sample #)</div><div class="v" id="oHi">—</div></div>
+        <div class="out-item"><div class="k"><span class="lo">Low</span> (sample #)</div><div class="v" id="oLo">—</div></div>
+        <div class="out-item"><div class="k">Range</div><div class="v" id="oRange">—</div></div>
+        <div class="out-item"><div class="k">n (data terisi)</div><div class="v" id="oN">—</div></div>
+        <div class="out-item wide"><div><div class="k">Cpu / Cpl</div><div class="v" id="oCpuCpl" style="font-size:14px;">—</div></div></div>
+      </div>
+      <div class="verdict idle" id="verdict">—</div>
+      <div class="note" id="rateNote"></div>
+    </div>
+
+    <div class="note">
+      Rule of thumb: Cpk ≥ 1.33 = capable · 1.00–1.33 = marginal, perlu kontrol ketat · &lt;1.00 = tidak capable, kemungkinan reject tinggi.
+    </div>
+
+  </div><!-- /page-cpk -->
+
+</div><!-- /wrap -->
+
+<script>
+/* ============================================================
+   TAB SWITCHING
+============================================================ */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.page).classList.add('active');
+  });
+});
+
+/* ============================================================
+   TAB 1: CROSS CHECK
+============================================================ */
+const MATERIALS = {
+  SUS304:{name:'SUS 304 (Stainless)', G:68000},
+  SWPA:{name:'SWP-A (Piano Wire A)', G:78500},
+  SWPB:{name:'SWP-B (Piano Wire B)', G:78500},
+  SWC:{name:'SWC (Hard Drawn)', G:78000},
+};
+
+let ccType = 'EXT';
+const ccTypeSeg = document.getElementById('ccType');
+const ccDoutLabel = document.getElementById('ccDoutLabel');
+const ccFlLabel = document.getElementById('ccFlLabel');
+const ccDeflLabel = document.getElementById('ccDeflLabel');
+const ccDefl = document.getElementById('ccDefl');
+
+function updateCcLabels(){
+  ccFlLabel.textContent = 'FL Out';
+  if(ccType==='EXT'){
+    ccDeflLabel.textContent = 'Tarikan (mm)';
+  } else {
+    ccDeflLabel.textContent = 'Tekanan (mm)';
+  }
+  ccDefl.placeholder = 'kosong = 10mm';
+}
+
+ccTypeSeg.querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    ccTypeSeg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    ccType = b.dataset.v;
+    updateCcLabels();
+  });
+});
+updateCcLabels();
+
+const ccMaterialSel = document.getElementById('ccMaterial');
+const ccGval = document.getElementById('ccGval');
+function updateGval(){
+  const m = MATERIALS[ccMaterialSel.value];
+  ccGval.textContent = `G = ${m.G.toLocaleString('id-ID')} N/mm²`;
+}
+ccMaterialSel.addEventListener('change', updateGval);
+updateGval();
+
+document.getElementById('ccClearBtn').addEventListener('click', ()=>{
+  ['ccWire','ccDout','ccFl','ccCoil','ccLoad','ccDefl'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ccResult').style.display='none';
+});
+
+document.getElementById('ccCheckBtn').addEventListener('click', runCrossCheck);
+
+function num(id){
+  const v = document.getElementById(id).value;
+  if(v===undefined || v===null || String(v).trim()==='') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+function runCrossCheck(){
+  const d = num('ccWire');
+  const Dout = num('ccDout');
+  const coil = num('ccCoil');
+  const load = num('ccLoad');
+  const deflInput = num('ccDefl');
+  const G = MATERIALS[ccMaterialSel.value].G;
+
+  if(d===null || Dout===null || coil===null){
+    alert('Minimal isi Wire Diameter, D Out, dan Jumlah Koil untuk menghitung.');
+    return;
+  }
+
+  const Dm = Dout - d;
+  const springIndex = Dm / d;
+  const nAktif = coil - 2; // default closed & ground correction
+
+  const result = document.getElementById('ccResult');
+
+  if(nAktif <= 0){
+    result.style.display='block';
+    const banner = document.getElementById('ccBanner');
+    banner.className = 'banner bad';
+    document.getElementById('ccIcon').textContent = '✗';
+    document.getElementById('ccLabel').textContent = 'DATA TIDAK VALID — Jumlah koil terlalu kecil';
+    document.getElementById('ccLoadSpec').textContent = '—';
+    document.getElementById('ccLoadCalc').textContent = '—';
+    document.getElementById('ccSelisih').textContent = '—';
+    document.getElementById('ccDeflWarn').innerHTML='';
+    document.getElementById('ccDm').textContent = Dm.toFixed(3)+' mm';
+    document.getElementById('ccIndex').textContent = springIndex.toFixed(2);
+    document.getElementById('ccNaktif').textContent = nAktif+' (tidak valid, koil − 2 ≤ 0)';
+    document.getElementById('ccKteori').textContent = '—';
+    document.getElementById('ccDeflUsed').textContent = '—';
+    document.getElementById('ccSolusiPanel').style.display='none';
+    return;
+  }
+
+  const kTeori = (G * Math.pow(d,4)) / (8 * Math.pow(Dm,3) * nAktif); // N/mm
+
+  // convert k to kgf/mm for comparison convenience (1 kgf = 9.80665 N)
+  const kTeoriKgf = kTeori / 9.80665;
+
+  let deflUsed, deflIsDefault;
+  if(deflInput!==null){
+    deflUsed = deflInput;
+    deflIsDefault = false;
+  } else {
+    deflUsed = 10;
+    deflIsDefault = true;
+  }
+
+  const loadCalc = kTeoriKgf * deflUsed; // kgf
+
+  result.style.display='block';
+
+  document.getElementById('ccDm').textContent = Dm.toFixed(3)+' mm';
+  document.getElementById('ccIndex').textContent = springIndex.toFixed(2) + (springIndex<4||springIndex>12 ? '  ⚠️ di luar range wajar (4–12)' : '  (normal)');
+  document.getElementById('ccNaktif').textContent = nAktif + ' koil';
+  document.getElementById('ccKteori').textContent = kTeoriKgf.toFixed(4)+' kgf/mm';
+  document.getElementById('ccDeflUsed').textContent = deflUsed+' mm' + (deflIsDefault ? ' (asumsi default)' : ' (aktual)');
+
+  document.getElementById('ccLoadCalc').textContent = loadCalc.toFixed(3)+' kgf';
+
+  const deflWarnEl = document.getElementById('ccDeflWarn');
+  deflWarnEl.innerHTML = deflIsDefault
+    ? `<div class="warn-tag">⚠️ Defleksi diasumsikan 10mm — hasil estimasi, bukan titik ukur aktual</div>`
+    : '';
+
+  const banner = document.getElementById('ccBanner');
+  const solusiPanel = document.getElementById('ccSolusiPanel');
+
+  if(load===null){
+    // no load spec to compare
+    document.getElementById('ccLoadSpec').textContent = 'N/A';
+    document.getElementById('ccSelisih').textContent = 'N/A';
+    banner.className = 'banner info';
+    document.getElementById('ccIcon').textContent = 'ℹ️';
+    document.getElementById('ccLabel').textContent = 'INFO — Load spec tidak ada untuk dibandingkan';
+    solusiPanel.style.display='none';
+    return;
+  }
+
+  document.getElementById('ccLoadSpec').textContent = load.toFixed(3)+' kgf';
+  const selisih = loadCalc - load;
+  const pct = Math.abs(selisih/load)*100;
+  document.getElementById('ccSelisih').textContent = `${selisih>=0?'+':''}${selisih.toFixed(3)} kgf (${pct.toFixed(1)}%)`;
+
+  const TOLERANSI_PCT = 10;
+
+  if(pct <= TOLERANSI_PCT){
+    banner.className = 'banner ok';
+    document.getElementById('ccIcon').textContent = '✓';
+    document.getElementById('ccLabel').textContent = `MASUK — Load selisih ${pct.toFixed(1)}%`;
+    solusiPanel.style.display='none';
+  } else {
+    banner.className = 'banner bad';
+    document.getElementById('ccIcon').textContent = '✗';
+    document.getElementById('ccLabel').textContent = `TIDAK MASUK — Load selisih ${pct.toFixed(1)}%`;
+    solusiPanel.style.display='block';
+  }
+
+  result.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ============================================================
+   TAB 2: CPK CALCULATOR
+============================================================ */
+const paramSel = document.getElementById('param');
+const nsizeSel = document.getElementById('nsize');
+const grid = document.getElementById('grid');
+const filledEl = document.getElementById('filled');
+const totalEl = document.getElementById('total');
+const barfill = document.getElementById('barfill');
+
+function buildGrid(){
+  const n = parseInt(nsizeSel.value);
+  totalEl.textContent = n;
+  grid.innerHTML = '';
+  for(let i=1;i<=n;i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML = `<span class="idx">${i}</span><input type="number" step="any" data-i="${i}">`;
+    grid.appendChild(cell);
+  }
+  attachInputListeners();
+  updateCounter();
+}
+
+function attachInputListeners(){
+  grid.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', updateCounter);
+  });
+}
+
+function updateCounter(){
+  const inputs = [...grid.querySelectorAll('input')];
+  const filled = inputs.filter(i=>i.value.trim()!=='').length;
+  filledEl.textContent = filled;
+  const pct = (filled/inputs.length)*100;
+  barfill.style.width = pct+'%';
+}
+
+nsizeSel.addEventListener('change', buildGrid);
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  grid.querySelectorAll('input').forEach(i=>i.value='');
+  updateCounter();
+  document.getElementById('outPanel').style.display='none';
+});
+
+const stdvalEl = document.getElementById('stdval');
+const tolpctEl = document.getElementById('tolpct');
+const lslEl = document.getElementById('lsl');
+const uslEl = document.getElementById('usl');
+const tolNote = document.getElementById('tolNote');
+
+function autoFillTol(){
+  const std = parseFloat(stdvalEl.value);
+  const tol = parseFloat(tolpctEl.value);
+  if(!isNaN(std) && !isNaN(tol)){
+    const delta = std*(tol/100);
+    lslEl.value = (std-delta).toFixed(4);
+    uslEl.value = (std+delta).toFixed(4);
+    tolNote.textContent = `Auto: LSL = ${(std-delta).toFixed(4)}, USL = ${(std+delta).toFixed(4)} (bisa diedit manual di atas)`;
+  } else {
+    tolNote.textContent = '';
+  }
+}
+stdvalEl.addEventListener('input', autoFillTol);
+tolpctEl.addEventListener('input', autoFillTol);
+
+document.getElementById('calcBtn').addEventListener('click', calcCpk);
+
+function calcCpk(){
+  const inputs = [...grid.querySelectorAll('input')];
+  const dataPairs = inputs
+    .map((i,idx)=>({v:parseFloat(i.value), i:idx+1}))
+    .filter(p=>!isNaN(p.v));
+  const data = dataPairs.map(p=>p.v);
+
+  if(data.length < 2){
+    alert('Isi minimal beberapa data dulu ya.');
+    return;
+  }
+
+  const unit = document.getElementById('unit').value;
+  const lsl = parseFloat(lslEl.value);
+  const usl = parseFloat(uslEl.value);
+  const hasLSL = !isNaN(lsl);
+  const hasUSL = !isNaN(usl);
+
+  const n = data.length;
+  const mean = data.reduce((a,b)=>a+b,0)/n;
+  const variance = data.reduce((a,b)=>a+Math.pow(b-mean,2),0)/(n-1);
+  const std = Math.sqrt(variance);
+
+  const hiPair = dataPairs.reduce((a,b)=> b.v>a.v?b:a);
+  const loPair = dataPairs.reduce((a,b)=> b.v<a.v?b:a);
+  const hi = hiPair.v, lo = loPair.v;
+  const range = hi-lo;
+
+  let cpu=null, cpl=null, cpk=null, cp=null;
+  if(hasUSL) cpu = (usl-mean)/(3*std);
+  if(hasLSL) cpl = (mean-lsl)/(3*std);
+  if(hasUSL && hasLSL){
+    cp = (usl-lsl)/(6*std);
+    cpk = Math.min(cpu,cpl);
+  } else if(hasUSL){
+    cpk = cpu;
+  } else if(hasLSL){
+    cpk = cpl;
+  }
+
+  document.getElementById('oMean').textContent = `${mean.toFixed(4)} ${unit}`;
+  document.getElementById('oStd').textContent = `${std.toFixed(4)} ${unit}`;
+  document.getElementById('oHi').innerHTML = `<span class="hi">${hi.toFixed(3)}</span> ${unit} <span style="color:var(--dim2);font-size:11px;">(#${hiPair.i})</span>`;
+  document.getElementById('oLo').innerHTML = `<span class="lo">${lo.toFixed(3)}</span> ${unit} <span style="color:var(--dim2);font-size:11px;">(#${loPair.i})</span>`;
+  document.getElementById('oRange').textContent = `${range.toFixed(4)} ${unit}`;
+  document.getElementById('oN').textContent = `${n} / ${inputs.length}`;
+  document.getElementById('oCp').textContent = cp!==null ? cp.toFixed(3) : '—';
+  document.getElementById('oCpk').textContent = cpk!==null ? cpk.toFixed(3) : '—';
+  document.getElementById('oCpuCpl').textContent =
+    (cpu!==null?`Cpu ${cpu.toFixed(3)}`:'Cpu —') + '   ' + (cpl!==null?`Cpl ${cpl.toFixed(3)}`:'Cpl —');
+
+  const verdict = document.getElementById('verdict');
+  verdict.className = 'verdict';
+  if(cpk===null){
+    verdict.classList.add('idle');
+    verdict.textContent = 'Isi LSL/USL untuk evaluasi capability';
+  } else if(cpk>=1.33){
+    verdict.classList.add('good');
+    verdict.textContent = `Capable (Cpk ${cpk.toFixed(2)})`;
+  } else if(cpk>=1.00){
+    verdict.classList.add('warn');
+    verdict.textContent = `Marginal — kontrol ketat (Cpk ${cpk.toFixed(2)})`;
+  } else {
+    verdict.classList.add('bad');
+    verdict.textContent = `Tidak capable (Cpk ${cpk.toFixed(2)})`;
+  }
+
+  const rateNote = document.getElementById('rateNote');
+  const param = paramSel.value;
+  if(param==='Rate'){
+    rateNote.textContent = `Catatan: spring rate = ΔF/ΔL antar 2 titik load. Pastikan tiap data k sudah dihitung per sample sebelum dimasukkan di sini.`;
+  } else if(param==='Load'){
+    rateNote.textContent = `Catatan: pastikan tiap data load diukur di titik deflection/panjang yang sama untuk semua sample.`;
+  } else {
+    rateNote.textContent = '';
+  }
+
+  document.getElementById('outPanel').style.display='block';
+  document.getElementById('outPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+buildGrid();
+</script>
+</body>
+</html>
